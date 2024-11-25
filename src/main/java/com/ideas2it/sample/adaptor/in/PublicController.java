@@ -29,7 +29,7 @@ public class PublicController {
         return ResponseEntity.ok(books);
     }
 
-    @GetMapping("/{name}")
+    @GetMapping("/name/{name}")
     public ResponseEntity<BookResponseDto> getBookByName(@PathVariable String name) {
         BookResponseDto book = userService.getBookByName(name);
         return ResponseEntity.ok(book);
