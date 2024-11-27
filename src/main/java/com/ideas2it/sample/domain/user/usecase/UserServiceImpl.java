@@ -12,6 +12,8 @@ import com.ideas2it.sample.infrastructure.exception.BookAlreadyBorrowedException
 import com.ideas2it.sample.infrastructure.exception.ResourceNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -24,8 +26,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
-    private final UserMapper userMapper;
-
+    private static final Logger LOGGER = LogManager.getLogger(UserServiceImpl.class);
     @Override
     public void borrowBook(Long userId, Long bookId) {
         val user = findUserById(userId);
@@ -34,6 +35,7 @@ public class UserServiceImpl implements UserService {
             throw new BookAlreadyBorrowedException("This book is already borrowed by you!");
         }
         user.getBorrowedBooks().add(book);
+        LOGGER.info("Book borrowed successfully");
         userRepository.save(user);
     }
 
@@ -42,6 +44,7 @@ public class UserServiceImpl implements UserService {
         val user = findUserById(userId);
         val book = findBookByIdAndNotDeleted(bookId);
         if (!user.getBorrowedBooks().contains(book)) {
+
             throw new ResourceNotFoundException("You didn't borrowed this book!");
         }
         user.getBorrowedBooks().remove(book);

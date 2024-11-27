@@ -17,6 +17,8 @@ import com.ideas2it.sample.adaptor.out.UserRepository;
 import com.ideas2it.sample.domain.user.port.in.AuthService;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -30,6 +32,7 @@ public class AuthServiceImpl implements AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenUtil jwtTokenUtil;
     private final UserMapper userMapper;
+    private static final Logger LOGGER = LogManager.getLogger(AuthServiceImpl.class);
 
     @Override
     public RegisterResponseDto register(RegisterRequestDto request) {
@@ -44,6 +47,7 @@ public class AuthServiceImpl implements AuthService {
                 .roles(Set.of(role))
                 .build();
         userRepository.save(user);
+        LOGGER.info("New user registered with Email : " + request.getEmail());
         return userMapper.toDto(user);
     }
 
@@ -51,9 +55,11 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponseDto login(AuthRequestDto request) {
         User user = checkUserAvailable(request.getEmail());
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            LOGGER.warn("Invalid credentials found");
             throw new BadCredentialsException("Invalid credentials");
         }
         String token = jwtTokenUtil.generateToken(user);
+        LOGGER.info("Login successful with Email : " + request.getEmail());
         return userMapper.toLoginResponse(user, token);
     }
 
@@ -65,7 +71,8 @@ public class AuthServiceImpl implements AuthService {
 
     private void validateEmail(String email) {
         if (userRepository.findByEmail(email).isPresent()) {
-            throw new AlreadyExistsException("A user with this email already exists");
+            LOGGER.warn("User already exists with same email.");
+            throw new AlreadyExistsException("A user with this email already exists.");
         }
     }
 

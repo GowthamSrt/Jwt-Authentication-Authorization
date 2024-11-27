@@ -15,6 +15,8 @@ import com.ideas2it.sample.adaptor.out.BookRepository;
 import com.ideas2it.sample.domain.book.port.in.BookService;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -25,12 +27,14 @@ public class BookServiceImpl implements BookService {
     private final BookRepository bookRepository;
     private final BookMapper bookMapper;
     private final ObjectMapper objectMapper;
+    private static final Logger LOGGER = LogManager.getLogger(BookServiceImpl.class);
 
     @Override
     public BookResponseDto addBook(BookDto bookDto) {
         bookAlreadyExists(bookDto.getName());
         Book book = bookMapper.toEntity(bookDto);
         bookRepository.save(book);
+        LOGGER.info(bookDto.getName() + " : Book added successfully");
         return bookMapper.toDto(book);
     }
 
@@ -56,6 +60,7 @@ public class BookServiceImpl implements BookService {
                 .orElseThrow(() -> new ResourceNotFoundException("Book with ID " + id + " is not found"));
         book.setDeleted(true);
         bookRepository.save(book);
+        LOGGER.info("Book with id " + id + "removed successfully");
         return "Book removed successfully";
     }
 
@@ -68,6 +73,7 @@ public class BookServiceImpl implements BookService {
         Book patchedBook = bookMapper.toEntity(patchedDto);
         patchedBook.setId(id);
         Book updatedBook = bookRepository.save(patchedBook);
+        LOGGER.info("Book with " + id + " : updated successfully");
         return bookMapper.toDto(updatedBook);
 
     }
@@ -78,12 +84,14 @@ public class BookServiceImpl implements BookService {
             JsonNode patchedNode = patch.apply(bookNode);
             return objectMapper.treeToValue(patchedNode, BookDto.class);
         } catch (JsonPatchException | JsonProcessingException e) {
+            LOGGER.warn("Patch apply failed");
             throw new RuntimeException("Failed to apply Json patch to BookDto");
         }
     }
 
     private void bookAlreadyExists(String name) {
         if (bookRepository.findByNameAndIsDeletedFalse(name).isPresent()) {
+            LOGGER.warn("The Book is already exists with NAME : " + name);
             throw new AlreadyExistsException("Book already exists!");
         }
     }
